@@ -2061,9 +2061,27 @@ class BigQueryCursor(BigQueryBaseCursor):
         self.all_pages_loaded = False  # type: bool
 
     @property
-    def description(self) -> NoReturn:
-        """ The schema description method is not currently implemented. """
-        raise NotImplementedError
+    def description(self) -> List:
+        """
+        The schema description methot return a TableFieldSchema.
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema
+        """
+        query_results = (
+            self.service.jobs().getQueryResults(
+                projectId=self.project_id,
+                jobId=self.job_id,
+                pageToken=self.page_token
+            ).execute(num_retries=self.num_retries)
+        )
+        if not query_results:
+            return list()
+        schema = query_results.get("schema")
+        if not schema:
+            return list()
+        fields = schema.get("fields")
+        if not fields:
+            return list()
+        return fields
 
     def close(self) -> None:
         """ By default, do nothing """
